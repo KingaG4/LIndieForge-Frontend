@@ -1,25 +1,54 @@
 /**
- * Main application script
+ * Main application script - LIndieForge
  * Handles routing and application initialization
  */
 
 // Application state
 const appState = {
-    currentRoute: 'home',
+    currentRoute: 'dashboard', // domyślnie po zalogowaniu
     params: {},
 };
 
 // DOM elements
 const appContainer = document.getElementById('app-container');
+const breadcrumbContainer = document.getElementById('breadcrumb-container');
+
+/**
+ * Zmienia ścieżkę w okruszkach (Breadcrumbs)
+ */
+function updateBreadcrumbs(route, params) {
+    let html = '';
+    switch(route) {
+        case 'dashboard':
+            html = '<li class="breadcrumb-item active">Dashboard</li>';
+            break;
+        case 'games':
+            html = '<li class="breadcrumb-item"><a href="#" data-route="dashboard">Dashboard</a></li>' +
+                '<li class="breadcrumb-item active">Games</li>';
+            break;
+        // Tutaj będziemy dodawać kolejne ścieżki (np. dla detali gry i zadań) w miarę rozwoju kodu
+        default:
+            html = `<li class="breadcrumb-item active">${route}</li>`;
+    }
+    breadcrumbContainer.innerHTML = html;
+
+    // Ponowne podpięcie eventów dla linków w breadcrumbs
+    breadcrumbContainer.querySelectorAll('[data-route]').forEach(element => {
+        element.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(e.target.getAttribute('data-route'));
+        });
+    });
+}
 
 /**
  * Simple router implementation
- * @param {string} route - Route name to navigate to
- * @param {Object} params - Route parameters
  */
 function navigateTo(route, params = {}) {
     appState.currentRoute = route;
     appState.params = params;
+
+    updateBreadcrumbs(route, params);
     renderCurrentRoute();
 
     // Update active nav link
@@ -35,77 +64,84 @@ function navigateTo(route, params = {}) {
  * Renders the current route content
  */
 function renderCurrentRoute() {
-    // Show loading indicator
     appContainer.innerHTML = `
-        <div class="text-center">
-            <div class="spinner-border" role="status">
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
         </div>
     `;
 
-    // Render content based on route
+    // Tutaj na razie używamy starych funkcji (home, list) z kodu startowego.
+    // W kolejnym kroku podmienimy to np. na renderDashboardPage().
     switch (appState.currentRoute) {
-        case 'home':
-            renderHomePage();
+        case 'dashboard':
+            // Na razie ładuje 'home', dopóki nie napiszemy pliku dashboard.js
+            if(typeof renderHomePage === 'function') renderHomePage();
             break;
-        case 'list':
-            renderListPage();
+        case 'games':
+            // Na razie ładuje 'list', dopóki nie napiszemy games.js
+            if(typeof renderListPage === 'function') renderListPage();
             break;
         case 'details':
-            renderDetailsPage(appState.params.id);
+            if(typeof renderDetailsPage === 'function') renderDetailsPage(appState.params.id);
             break;
         case 'edit':
-            renderEditPage(appState.params.id);
+            if(typeof renderEditPage === 'function') renderEditPage(appState.params.id);
             break;
         case 'create':
-            renderEditPage();
-            break;
-        case 'example':
-            renderExamplePage();
+            if(typeof renderEditPage === 'function') renderEditPage();
             break;
         default:
-            renderNotFoundPage();
+            appContainer.innerHTML = '<div class="alert alert-warning">Page not found 404</div>';
     }
 }
 
 /**
- * Shows an error message
- * @param {string} message - Error message to display
+ * Zmienione zgodnie ze specyfikacją: Pokazuje błąd w prawym rogu jako Toast
  */
 function showError(message) {
-    Swal.fire({
-        title: 'Error!',
-        text: message,
-        icon: 'error',
-        confirmButtonText: 'OK'
-    });
+    Toastify({
+        text: "Error: " + message,
+        duration: 4000,
+        close: true,
+        gravity: "bottom",
+        position: "right",
+        style: {
+            background: "#dc3545", // Bootstrap danger
+        }
+    }).showToast();
 }
 
 /**
- * Shows a success message
- * @param {string} message - Success message to display
+ * Zmienione zgodnie ze specyfikacją: Pokazuje sukces w prawym rogu jako Toast
  */
 function showSuccess(message) {
-    Swal.fire({
-        title: 'Success!',
+    Toastify({
         text: message,
-        icon: 'success',
-        confirmButtonText: 'OK'
-    });
+        duration: 3000,
+        close: true,
+        gravity: "bottom",
+        position: "right",
+        style: {
+            background: "#198754", // Bootstrap success
+        }
+    }).showToast();
 }
 
 /**
- * Confirms an action
- * @param {string} message - Confirmation message
- * @returns {Promise} - Resolves to true if confirmed, false otherwise
+ * Confirms an action (Zostaje SweetAlert2, bo do potwierdzeń usunięcia jest dużo lepszy)
  */
 function confirmAction(message) {
     return Swal.fire({
         title: 'Are you sure?',
         text: message,
         icon: 'warning',
+        background: '#1e1e1e',
+        color: '#fff',
         showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
         confirmButtonText: 'Yes',
         cancelButtonText: 'No'
     }).then(result => {
@@ -113,21 +149,18 @@ function confirmAction(message) {
     });
 }
 
-/**
- * Initialize the application
- */
 function initApp() {
     // Set up navigation event listeners
     document.querySelectorAll('[data-route]').forEach(element => {
         element.addEventListener('click', (e) => {
             e.preventDefault();
-            const route = e.target.getAttribute('data-route');
+            // Obsługa kliknięcia na ikonę wewnątrz linku
+            const route = e.target.closest('[data-route]').getAttribute('data-route');
             navigateTo(route);
         });
     });
 
-    // Initial route render
-    renderCurrentRoute();
+    navigateTo('dashboard');
 }
 
 // Initialize the app when the DOM is fully loaded

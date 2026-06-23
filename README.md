@@ -32,7 +32,7 @@ This is a starter project for the Web Application Development course. It provide
 ## Features
 
 - Simple vanilla JavaScript implementation without complex frameworks
-- Basic routing system
+- Basic routing system[]()
 - API service for communication with backend
 - Reusable UI components (tables, forms, modals)
 - Bootstrap for styling
