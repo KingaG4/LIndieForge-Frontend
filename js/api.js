@@ -1,160 +1,64 @@
 /**
- * API Service
- * Handles all communication with the backend REST API
+ * LIndieForge - API Service
+ * Obsługuje komunikację z Waszym backendem Spring Boot
  */
 
-// Configuration - CHANGE THIS TO MATCH YOUR BACKEND
+// Konfiguracja zgodna z Waszym plikiem application.properties
 const API_CONFIG = {
-    baseUrl: 'http://localhost:8080/api',
+    baseUrl: 'http://localhost:8765/api', // Port 8765 z application.properties
     endpoints: {
-        items: '/items'
+        games: '/games',
+        tasks: '/tasks',
+        users: '/users',
+        comments: '/comments'
     }
 };
 
-/**
- * API Service object
- */
 const ApiService = {
-    /**
-     * Perform a GET request
-     * @param {string} endpoint - API endpoint
-     * @returns {Promise} - Promise that resolves with response data
-     */
+    // Uniwersalna metoda GET
     get: async function(endpoint) {
         try {
             const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`);
-
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status} ${response.statusText}`);
-            }
-
+            if (!response.ok) throw new Error(`Błąd API: ${response.status}`);
             return await response.json();
         } catch (error) {
-            console.error('API Request Failed:', error);
+            console.error('API GET Failed:', error);
             throw error;
         }
     },
 
-    /**
-     * Perform a POST request
-     * @param {string} endpoint - API endpoint
-     * @param {Object} data - Data to send
-     * @returns {Promise} - Promise that resolves with response data
-     */
+    // Uniwersalna metoda POST
     post: async function(endpoint, data) {
         try {
             const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status} ${response.statusText}`);
-            }
-
-            return await response.json();
+            // Spring z Waszych kontrolerów zwraca zwykły tekst np. "Game added", więc używamy .text() zamiast .json()
+            if (!response.ok) throw new Error(`Błąd API: ${response.status}`);
+            return await response.text();
         } catch (error) {
-            console.error('API Request Failed:', error);
+            console.error('API POST Failed:', error);
             throw error;
         }
     },
 
-    /**
-     * Perform a PUT request
-     * @param {string} endpoint - API endpoint
-     * @param {Object} data - Data to send
-     * @returns {Promise} - Promise that resolves with response data
-     */
-    put: async function(endpoint, data) {
-        try {
-            const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status} ${response.statusText}`);
-            }
-
-            return await response.json();
-        } catch (error) {
-            console.error('API Request Failed:', error);
-            throw error;
-        }
+    // POBIERANIE DANYCH Z BAZY
+    getAllGames: function() {
+        return this.get(API_CONFIG.endpoints.games);
     },
 
-    /**
-     * Perform a DELETE request
-     * @param {string} endpoint - API endpoint
-     * @returns {Promise} - Promise that resolves with response data
-     */
-    delete: async function(endpoint) {
-        try {
-            const response = await fetch(`${API_CONFIG.baseUrl}${endpoint}`, {
-                method: 'DELETE'
-            });
-
-            if (!response.ok) {
-                throw new Error(`API Error: ${response.status} ${response.statusText}`);
-            }
-
-            return true;
-        } catch (error) {
-            console.error('API Request Failed:', error);
-            throw error;
-        }
+    getAllTasks: function() {
+        return this.get(API_CONFIG.endpoints.tasks);
     },
 
-    // Specific API operations - CUSTOMIZE THESE FOR YOUR ENTITY
-
-    /**
-     * Get all items
-     * @returns {Promise} - Promise that resolves with all items
-     */
-    getAllItems: function() {
-        return this.get(API_CONFIG.endpoints.items);
+    // ZAPISYWANIE DANYCH DO BAZY
+    createGame: function(gameDto) {
+        return this.post(API_CONFIG.endpoints.games, gameDto);
     },
 
-    /**
-     * Get item by ID
-     * @param {number} id - Item ID
-     * @returns {Promise} - Promise that resolves with item data
-     */
-    getItemById: function(id) {
-        return this.get(`${API_CONFIG.endpoints.items}/${id}`);
-    },
-
-    /**
-     * Create a new item
-     * @param {Object} item - Item data
-     * @returns {Promise} - Promise that resolves with created item
-     */
-    createItem: function(item) {
-        return this.post(API_CONFIG.endpoints.items, item);
-    },
-
-    /**
-     * Update an existing item
-     * @param {number} id - Item ID
-     * @param {Object} item - Updated item data
-     * @returns {Promise} - Promise that resolves with updated item
-     */
-    updateItem: function(id, item) {
-        return this.put(`${API_CONFIG.endpoints.items}/${id}`, item);
-    },
-
-    /**
-     * Delete an item
-     * @param {number} id - Item ID
-     * @returns {Promise} - Promise that resolves when item is deleted
-     */
-    deleteItem: function(id) {
-        return this.delete(`${API_CONFIG.endpoints.items}/${id}`);
+    createTask: function(taskDto) {
+        return this.post(API_CONFIG.endpoints.tasks, taskDto);
     }
 };

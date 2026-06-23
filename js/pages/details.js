@@ -134,47 +134,60 @@ function renderDetailsPage(id, name = "Game Details") {
 /**
  * Pobiera dane szczegółowe gry i jej zadań
  */
+/**
+ * Pobiera prawdziwe dane gry i jej zadań z bazy
+ */
 function loadGameDetailsData(id) {
-    // Symulacja danych
-    setTimeout(() => {
-        const mockGame = {
-            id: id || 1, name: "Dungeon Quest", description: "A dark fantasy RPG game with rogue-like elements.",
-            genre: "RPG", platform: "PC, Console", engine: "Unity", phase: "Alpha", releaseDate: "2026-11-15",
-            progress: 65, team: ["Kinga Głowacka", "Natalia Michalak", "Jan Kowalski"]
-        };
+    // Usuwamy stare mocki (Dungeon Quest zniknie!).
+    // Pobieramy naraz listę wszystkich gier i wszystkich zadań z naszego backendu
+    Promise.all([
+        ApiService.getAllGames(),
+        ApiService.getAllTasks()
+    ])
+        .then(([allGames, allTasks]) => {
+            // 1. Znalezienie konkretnej gry w pobranej liście
+            const game = allGames.find(g => g.id == id);
 
-        const mockTasks = [
-            { id: 101, title: "Design UI", assignee: "Kinga Głowacka", priority: "High", deadline: "2026-06-25", status: "In Progress", daysLeft: 2 },
-            { id: 102, title: "Fix audio bug", assignee: "Jan Kowalski", priority: "Medium", deadline: "2026-06-20", status: "To Do", daysLeft: -3 },
-            { id: 103, title: "Write lore", assignee: "Natalia Michalak", priority: "Low", deadline: "2026-07-05", status: "Done", daysLeft: 12 },
-            { id: 104, title: "Test combat", assignee: "Jan Kowalski", priority: "High", deadline: "2026-06-28", status: "In Review", daysLeft: 5 }
-        ];
+            if (!game) {
+                document.getElementById('overview-container').innerHTML = '<div class="alert alert-danger text-center mt-4">Gra nie istnieje w bazie danych!</div>';
+                return;
+            }
 
-        document.getElementById('game-title').innerText = mockGame.name;
+            // Zmiana tytułu na górze strony na prawdziwą nazwę gry z bazy
+            document.getElementById('game-title').innerText = game.name;
 
-        // 1. Renderowanie zakładki OVERVIEW
-        document.getElementById('overview-container').innerHTML = `
+            // 2. Filtrowanie zadań przypisanych TYLKO do tej konkretnej gry
+            // W bazie Springa Task ma pole 'game', które jest obiektem
+            const gameTasks = allTasks.filter(t => t.game && t.game.id == id);
+
+            // Obliczanie prawdziwego procentu ukończenia (na bazie zadań ze statusem "Done")
+            const totalTasks = gameTasks.length;
+            const doneTasks = gameTasks.filter(t => t.status === 'Done').length;
+            const progress = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
+
+            // 3. RENDEROWANIE ZAKŁADKI OVERVIEW
+            document.getElementById('overview-container').innerHTML = `
             <div class="col-md-8 mb-4">
                 <div class="card bg-dark border-secondary h-100">
                     <div class="card-body">
                         <h5 class="card-title text-light mb-3">About the Game</h5>
-                        <p class="text-muted">${mockGame.description}</p>
+                        <p class="text-muted">${game.description || 'Brak opisu.'}</p>
                         
                         <div class="row mt-4">
-                            <div class="col-sm-6 mb-3"><span class="detail-label">Genre:</span> <span class="text-light">${mockGame.genre}</span></div>
-                            <div class="col-sm-6 mb-3"><span class="detail-label">Engine:</span> <span class="badge bg-secondary">${mockGame.engine}</span></div>
-                            <div class="col-sm-6 mb-3"><span class="detail-label">Platforms:</span> <span class="text-light">${mockGame.platform}</span></div>
-                            <div class="col-sm-6 mb-3"><span class="detail-label">Phase:</span> <span class="badge bg-info text-dark">${mockGame.phase}</span></div>
-                            <div class="col-sm-6 mb-3"><span class="detail-label">Release Date:</span> <span class="text-light">${mockGame.releaseDate}</span></div>
+                            <div class="col-sm-6 mb-3"><span class="detail-label">Genre:</span> <span class="text-light">${game.genre || '-'}</span></div>
+                            <div class="col-sm-6 mb-3"><span class="detail-label">Engine:</span> <span class="badge bg-secondary">${game.engine || '-'}</span></div>
+                            <div class="col-sm-6 mb-3"><span class="detail-label">Platforms:</span> <span class="text-light">${game.platform || '-'}</span></div>
+                            <div class="col-sm-6 mb-3"><span class="detail-label">Phase:</span> <span class="badge bg-info text-dark">${game.phase || '-'}</span></div>
+                            <div class="col-sm-6 mb-3"><span class="detail-label">Release Date:</span> <span class="text-light">${game.releaseDate || '-'}</span></div>
                         </div>
 
                         <div class="mt-4">
                             <div class="d-flex justify-content-between small mb-1">
                                 <span class="text-muted">Overall Completion</span>
-                                <span class="text-light fw-bold">${mockGame.progress}%</span>
+                                <span class="text-light fw-bold">${progress}%</span>
                             </div>
                             <div class="progress bg-dark border border-secondary" style="height: 15px;">
-                                <div class="progress-bar bg-primary" role="progressbar" style="width: ${mockGame.progress}%;"></div>
+                                <div class="progress-bar bg-primary" role="progressbar" style="width: ${progress}%;"></div>
                             </div>
                         </div>
                     </div>
@@ -183,70 +196,90 @@ function loadGameDetailsData(id) {
             <div class="col-md-4 mb-4">
                 <div class="card bg-dark border-secondary h-100">
                     <div class="card-body">
-                        <h5 class="card-title text-light mb-3"><i class="bi bi-people"></i> Team Members</h5>
+                        <h5 class="card-title text-light mb-3"><i class="bi bi-people"></i> Team</h5>
                         <ul class="list-group list-group-flush">
-                            ${mockGame.team.map(member => `<li class="list-group-item bg-dark text-muted border-secondary"><i class="bi bi-person-fill text-primary me-2"></i>${member}</li>`).join('')}
+                            <li class="list-group-item bg-dark text-muted border-secondary">
+                                <i class="bi bi-info-circle text-primary me-2"></i>Funkcja zespołu wkrótce...
+                            </li>
                         </ul>
                     </div>
                 </div>
             </div>
         `;
 
-        // 2. Renderowanie zakładki TASKS (Tabela) oraz KANBAN BOARD
-        const tableBody = document.getElementById('game-tasks-table');
-        const kanbanTodo = document.getElementById('kanban-todo');
-        const kanbanProgress = document.getElementById('kanban-progress');
-        const kanbanReview = document.getElementById('kanban-review');
-        const kanbanDone = document.getElementById('kanban-done');
+            // 4. RENDEROWANIE TABELI ZADAŃ ORAZ KANBAN BOARDA
+            const tableBody = document.getElementById('game-tasks-table');
+            const kanbanTodo = document.getElementById('kanban-todo');
+            const kanbanProgress = document.getElementById('kanban-progress');
+            const kanbanReview = document.getElementById('kanban-review');
+            const kanbanDone = document.getElementById('kanban-done');
 
-        tableBody.innerHTML = '';
-        kanbanTodo.innerHTML = ''; kanbanProgress.innerHTML = ''; kanbanReview.innerHTML = ''; kanbanDone.innerHTML = '';
+            tableBody.innerHTML = '';
+            kanbanTodo.innerHTML = ''; kanbanProgress.innerHTML = ''; kanbanReview.innerHTML = ''; kanbanDone.innerHTML = '';
 
-        mockTasks.forEach(task => {
-            // Kolorowanie dla Tabeli
-            let deadlineClass = "deadline-safe";
-            if (task.daysLeft < 0) deadlineClass = "deadline-danger";
-            else if (task.daysLeft <= 3) deadlineClass = "deadline-warn";
+            gameTasks.forEach(task => {
+                // Obliczanie dni do deadline'u na potrzeby kolorów
+                let daysLeft = 999;
+                if(task.deadline) {
+                    const today = new Date();
+                    const deadlineDate = new Date(task.deadline);
+                    daysLeft = Math.ceil((deadlineDate - today) / (1000 * 60 * 60 * 24));
+                }
 
-            let statusClass = "status-todo";
-            if (task.status === "In Progress") statusClass = "status-progress";
-            if (task.status === "In Review") statusClass = "status-review";
-            if (task.status === "Done") statusClass = "status-done";
+                let deadlineClass = "deadline-safe";
+                if (daysLeft < 0) deadlineClass = "deadline-danger";
+                else if (daysLeft <= 3) deadlineClass = "deadline-warn";
 
-            // Dodanie wiersza do Tabeli
-            tableBody.innerHTML += `
-                <tr style="cursor: pointer;" onclick="showSuccess('Szczegóły zadania #${task.id}')">
+                let statusClass = "status-todo";
+                if (task.status === "In Progress") statusClass = "status-progress";
+                if (task.status === "In Review") statusClass = "status-review";
+                if (task.status === "Done") statusClass = "status-done";
+
+                const assigneeName = task.assignedUser ? task.assignedUser.name : "Unassigned";
+
+                // Wiersz Tabeli
+                tableBody.innerHTML += `
+                <tr>
                     <td class="text-muted">#${task.id}</td>
                     <td class="fw-bold text-light">${task.title}</td>
-                    <td>${task.assignee}</td>
+                    <td>${assigneeName}</td>
                     <td>${task.priority}</td>
-                    <td class="${deadlineClass}">${task.deadline}</td>
+                    <td class="${deadlineClass}">${task.deadline || '-'}</td>
                     <td><span class="status-badge ${statusClass}">${task.status}</span></td>
                 </tr>
             `;
 
-            // Dodanie karty do Kanban Boarda z atrybutem draggable="true"
-            const kanbanCardHTML = `
+                // Karta w Kanban
+                const kanbanCardHTML = `
                 <div class="card bg-dark border-secondary mb-2 kanban-card p-2" id="task-${task.id}" draggable="true" ondragstart="drag(event)">
                     <div class="d-flex justify-content-between mb-1">
                         <small class="text-muted">#${task.id}</small>
-                        <small class="${deadlineClass}"><i class="bi bi-calendar"></i> ${task.deadline}</small>
+                        <small class="${deadlineClass}"><i class="bi bi-calendar"></i> ${task.deadline || '-'}</small>
                     </div>
                     <h6 class="text-light mb-2">${task.title}</h6>
                     <div class="d-flex justify-content-between align-items-center mt-2">
                         <span class="badge bg-secondary">${task.priority}</span>
-                        <small class="text-muted" title="${task.assignee}"><i class="bi bi-person"></i> ${task.assignee.split(' ')[0]}</small>
+                        <small class="text-muted" title="${assigneeName}"><i class="bi bi-person"></i> ${assigneeName.split(' ')[0]}</small>
                     </div>
                 </div>
             `;
 
-            if (task.status === "To Do") kanbanTodo.innerHTML += kanbanCardHTML;
-            else if (task.status === "In Progress") kanbanProgress.innerHTML += kanbanCardHTML;
-            else if (task.status === "In Review") kanbanReview.innerHTML += kanbanCardHTML;
-            else if (task.status === "Done") kanbanDone.innerHTML += kanbanCardHTML;
-        });
+                // Rozdzielanie kart do odpowiednich kolumn Kanban
+                if (task.status === "To Do") kanbanTodo.innerHTML += kanbanCardHTML;
+                else if (task.status === "In Progress") kanbanProgress.innerHTML += kanbanCardHTML;
+                else if (task.status === "In Review") kanbanReview.innerHTML += kanbanCardHTML;
+                else kanbanDone.innerHTML += kanbanCardHTML;
+            });
 
-    }, 500);
+            // Gdy nie ma żadnych zadań
+            if(gameTasks.length === 0) {
+                tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Ta gra nie ma jeszcze przypisanych zadań.</td></tr>';
+                kanbanTodo.innerHTML = '<div class="text-muted text-center mt-3 small">Brak zadań</div>';
+            }
+        })
+        .catch(error => {
+            document.getElementById('overview-container').innerHTML = `<div class="alert alert-danger text-center mt-4">Błąd połączenia: ${error.message}</div>`;
+        });
 }
 
 /* =========================================

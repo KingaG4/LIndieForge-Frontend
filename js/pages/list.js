@@ -64,55 +64,72 @@ function renderListPage() {
 /**
  * Pobiera dane gier i renderuje je jako Karty
  */
+/**
+ * Pobiera prawdziwe dane gier z backendu (Spring Boot) i renderuje je jako Karty
+ */
 function loadGamesData() {
-    // Tymczasowe Mocki (symulacja danych z bazy)
-    setTimeout(() => {
-        const mockGames = [
-            { id: 1, name: "Dungeon Quest", genre: "RPG", platform: "PC, Console", phase: "Alpha", progress: 65, engine: "Unity" },
-            { id: 2, name: "Space Miner", genre: "Puzzle", platform: "Mobile", phase: "Production", progress: 30, engine: "Godot" },
-            { id: 3, name: "Neon Nights", genre: "Platformer", platform: "PC", phase: "Concept", progress: 5, engine: "Unreal" },
-            { id: 4, name: "Horror House", genre: "Horror", platform: "PC, VR", phase: "Beta", progress: 90, engine: "Unity" }
-        ];
+    const container = document.getElementById('games-container');
 
-        const container = document.getElementById('games-container');
-        container.innerHTML = ''; // Usuwamy spinner ładowania
+    // Używamy naszego ApiService do pobrania listy z bazy
+    ApiService.getAllGames()
+        .then(games => {
+            container.innerHTML = ''; // Usuwamy kręcące się kółko ładowania
 
-        mockGames.forEach(game => {
-            // Kolor paska postępu zależny od procentu ukończenia
-            let progressColor = "bg-primary";
-            if(game.progress >= 90) progressColor = "bg-success";
-            else if(game.progress < 20) progressColor = "bg-secondary";
+            // Jeśli baza jest pusta
+            if (!games || games.length === 0) {
+                container.innerHTML = `
+                    <div class="col-12 text-center text-muted mt-5">
+                        <i class="bi bi-controller" style="font-size: 3rem;"></i>
+                        <p class="mt-3">Brak gier w bazie. Kliknij "New Game", aby dodać pierwszą!</p>
+                    </div>`;
+                return;
+            }
 
-            // Renderowanie karty
-            container.innerHTML += `
-                <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card card-hover h-100 bg-dark border-secondary" style="cursor: pointer;" onclick="goToGameDetails(${game.id}, '${game.name}')">
-                        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0 text-light text-truncate" title="${game.name}">${game.name}</h5>
-                            <span class="badge bg-dark border border-secondary text-muted">${game.engine}</span>
-                        </div>
-                        <div class="card-body d-flex flex-column">
-                            <div class="mb-3">
-                                <span class="badge bg-secondary">${game.genre}</span>
-                                <span class="badge bg-info text-dark">${game.phase}</span>
+            // Przechodzimy przez każdą grę zwróconą przez backend
+            games.forEach(game => {
+                // Backend zwraca obiekty z polami: name, genre, engine, platform, phase
+                // Na tym etapie postęp (progress) ustawiamy na 0%, dopóki nie będziemy liczyć go z ukończonych zadań
+                let progress = 0;
+                let progressColor = "bg-primary";
+
+                // Renderowanie karty
+                container.innerHTML += `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card card-hover h-100 bg-dark border-secondary" style="cursor: pointer;" onclick="goToGameDetails(${game.id}, '${game.name}')">
+                            <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0 text-light text-truncate" title="${game.name}">${game.name}</h5>
+                                <span class="badge bg-dark border border-secondary text-muted">${game.engine}</span>
                             </div>
-                            <p class="text-muted small mb-4"><i class="bi bi-display"></i> Platforms: ${game.platform}</p>
-                            
-                            <div class="mt-auto">
-                                <div class="d-flex justify-content-between small mb-1">
-                                    <span class="text-muted">Completion</span>
-                                    <span class="text-light fw-bold">${game.progress}%</span>
+                            <div class="card-body d-flex flex-column">
+                                <div class="mb-3">
+                                    <span class="badge bg-secondary">${game.genre}</span>
+                                    <span class="badge bg-info text-dark">${game.phase}</span>
                                 </div>
-                                <div class="progress bg-dark border border-secondary" style="height: 10px;">
-                                    <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${game.progress}%;" aria-valuenow="${game.progress}" aria-valuemin="0" aria-valuemax="100"></div>
+                                <p class="text-muted small mb-4"><i class="bi bi-display"></i> Platforms: ${game.platform}</p>
+                                
+                                <div class="mt-auto">
+                                    <div class="d-flex justify-content-between small mb-1">
+                                        <span class="text-muted">Completion</span>
+                                        <span class="text-light fw-bold">${progress}%</span>
+                                    </div>
+                                    <div class="progress bg-dark border border-secondary" style="height: 10px;">
+                                        <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${progress}%;" aria-valuenow="${progress}" aria-valuemin="0" aria-valuemax="100"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            `;
+                `;
+            });
+        })
+        .catch(error => {
+            // Obsługa błędu, np. gdyby serwer Spring był wyłączony
+            container.innerHTML = `
+                <div class="col-12 text-center text-danger mt-5">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                    <p class="mt-2">Błąd połączenia z serwerem: ${error.message}</p>
+                </div>`;
         });
-    }, 400); // 0.4s opóźnienia
 }
 
 /**

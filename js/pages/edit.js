@@ -92,9 +92,15 @@ function renderGameForm(isCreateMode) {
         submitLabel: isCreateMode ? 'Create Game' : 'Save Changes',
         showCancel: false,
         onSubmit: (formData) => {
-            // W przyszłości: ApiService.post('/games', formData)
-            showSuccess("Game saved successfully! (Simulation)");
-            setTimeout(() => navigateTo('games'), 1000);
+            // WYSYŁAMY PRAWDZIWE DANE DO SPRINGA!
+            ApiService.createGame(formData)
+                .then(response => {
+                    showSuccess("SUKCES! Gra została zapisana w bazie MySQL!");
+                    setTimeout(() => navigateTo('games'), 1500);
+                })
+                .catch(error => {
+                    showError("Błąd zapisu do bazy: " + error.message);
+                });
         }
     });
 
@@ -133,10 +139,11 @@ function renderTaskForm(isCreateMode) {
         },
         { id: 'deadline', name: 'deadline', label: 'Deadline', type: 'date', required: true },
         {
-            id: 'assignee', name: 'assignee', label: 'Assignee', type: 'select', required: true,
+            id: 'assignedUserId', name: 'assignedUserId', label: 'Assignee', type: 'select', required: true,
             options: [
-                { value: 'Kinga Głowacka', label: 'Kinga Głowacka' }, { value: 'Natalia Michalak', label: 'Natalia Michalak' },
-                { value: 'Jan Kowalski', label: 'Jan Kowalski' }
+                { value: '1', label: 'Kinga Głowacka' },
+                { value: '2', label: 'Natalia Michalak' },
+                { value: '3', label: 'Jan Kowalski' }
             ]
         }
     ];
@@ -146,9 +153,18 @@ function renderTaskForm(isCreateMode) {
         submitLabel: isCreateMode ? 'Create Task' : 'Save Changes',
         showCancel: false,
         onSubmit: (formData) => {
-            showSuccess("Task saved successfully! (Simulation)");
-            const gameId = appState.params.gameId || 1;
-            setTimeout(() => navigateTo('details', { id: gameId }), 1000);
+            // Dodajemy gameId, bo backend z Waszego DTO tego oczekuje
+            formData.gameId = appState.params.gameId || 1;
+
+            // WYSYŁAMY PRAWDZIWE DANE DO SPRINGA!
+            ApiService.createTask(formData)
+                .then(response => {
+                    showSuccess("SUKCES! Zadanie pomyślnie dodane do bazy!");
+                    setTimeout(() => navigateTo('details', { id: formData.gameId }), 1500);
+                })
+                .catch(error => {
+                    showError("Błąd zapisu zadania do bazy: " + error.message);
+                });
         }
     });
 
