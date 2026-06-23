@@ -98,71 +98,125 @@ function renderHomePage() {
 /**
  * Pobiera dane i wstrzykuje je do widoku
  */
+/**
+ * Pobiera prawdziwe dane z bazy (Spring Boot) i wstrzykuje je do Dashboardu
+ */
 function loadDashboardData() {
-    // W przyszłości zamienimy to na odpytanie Waszego Spring Backendu np:
-    // ApiService.get('/dashboard/stats').then(...)
+    // Pobieramy naraz wszystkie gry i wszystkie zadania z API
+    Promise.all([
+        ApiService.getAllGames(),
+        ApiService.getAllTasks()
+    ])
+        .then(([games, tasks]) => {
+            // 1. ZMIENNE DO STATYSTYK
+            const activeGamesCount = games.length;
+            let overdueCount = 0;
+            let myTasksCount = 0;
+            let inProgressCount = 0;
 
-    // Tymczasowa symulacja opóźnienia i sztucznych danych
-    setTimeout(() => {
-        const mockStats = { activeGames: 3, overdueTasks: 1, myTasks: 8, inProgress: 4 };
-        const mockChart = { todo: 3, inProgress: 4, done: 1 };
-        const mockTasks = [
-            { id: 1, title: "Design UI for main menu", game: "Dungeon Quest", priority: "High", deadline: "2026-06-25", status: "In Progress", daysLeft: 2 },
-            { id: 2, title: "Fix audio bug", game: "Space Miner", priority: "Medium", deadline: "2026-06-20", status: "To Do", daysLeft: -3 },
-            { id: 3, title: "Write lore text", game: "Dungeon Quest", priority: "Low", deadline: "2026-07-05", status: "Done", daysLeft: 12 }
-        ];
+            let chartTodo = 0;
+            let chartProgress = 0;
+            let chartDone = 0;
 
-        // 1. Aktualizacja Kafelków
-        document.getElementById('stat-games').innerText = mockStats.activeGames;
-        document.getElementById('stat-overdue').innerText = mockStats.overdueTasks;
-        document.getElementById('stat-mytasks').innerText = mockStats.myTasks;
-        document.getElementById('stat-inprogress').innerText = mockStats.inProgress;
+            const today = new Date();
+            today.setHours(0,0,0,0);
 
-        // 2. Renderowanie Tabeli
-        const tbody = document.getElementById('dashboard-tasks-table');
-        tbody.innerHTML = '';
-
-        mockTasks.forEach(task => {
-            // Logika kolorowania deadline'ów wg specyfikacji
-            let deadlineClass = "deadline-safe";
-            if (task.daysLeft < 0) deadlineClass = "deadline-danger";
-            else if (task.daysLeft <= 3) deadlineClass = "deadline-warn";
-
-            // Logika kolorowania statusów
-            let statusClass = "status-todo";
-            if (task.status === "In Progress") statusClass = "status-progress";
-            if (task.status === "Done") statusClass = "status-done";
-
-            tbody.innerHTML += `
-                <tr style="cursor: pointer;" onclick="showSuccess('Clicked task #${task.id}')">
-                    <td class="fw-bold text-light">${task.title}</td>
-                    <td class="text-muted">${task.game}</td>
-                    <td>${task.priority}</td>
-                    <td class="${deadlineClass}">${task.deadline}</td>
-                    <td><span class="status-badge ${statusClass}">${task.status}</span></td>
-                </tr>
-            `;
-        });
-
-        // 3. Renderowanie Wykresu
-        const ctx = document.getElementById('taskStatusChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut', // doughnut wygląda nowocześniej niż zwykły pie
-            data: {
-                labels: ['To Do', 'In Progress', 'Done'],
-                datasets: [{
-                    data: [mockChart.todo, mockChart.inProgress, mockChart.done],
-                    backgroundColor: ['#6c757d', '#0d6efd', '#198754'], // Zgodne z Bootstrap
-                    borderWidth: 0
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: { position: 'bottom', labels: { color: '#e0e0e0' } }
+            // 2. PRZELICZANIE ZADAŃ
+            tasks.forEach(task => {
+                // Zliczanie do wykresu kołowego
+                if (task.status === "To Do") chartTodo++;
+                if (task.status === "In Progress") {
+                    chartProgress++;
+                    inProgressCount++; // do kafelka
                 }
-            }
-        });
+                if (task.status === "Done") chartDone++;
 
-    }, 600); // 0.6s sztucznego ładowania dla dobrego efektu
+                // Zliczanie "My Tasks" - zakładamy, że zalogowana jest Kinga (ID = 1)
+                if (task.assignedUser && task.assignedUser.id === 1 && task.status !== "Done") {
+                    myTasksCount++;
+                }
+
+                // Zliczanie zaległych (Overdue)
+                if (task.deadline && task.status !== "Done") {
+                    const deadlineDate = new Date(task.deadline);
+                    if (deadlineDate < today) overdueCount++;
+                }
+            });
+
+            // 3. AKTUALIZACJA 4 KAFELKÓW
+            document.getElementById('stat-games').innerText = activeGamesCount;
+            document.getElementById('stat-overdue').innerText = overdueCount;
+            document.getElementById('stat-mytasks').innerText = myTasksCount;
+            document.getElementById('stat-inprogress').innerText = inProgressCount;
+
+            // 4. RENDEROWANIE WYKRESU KOŁOWEGO (Doughnut)
+            const ctx = document.getElementById('taskStatusChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['To Do', 'In Progress', 'Done'],
+                    datasets: [{
+                        data: [chartTodo, chartProgress, chartDone],
+                        backgroundColor: ['#6c757d', '#0d6efd', '#198754'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { color: '#e0e0e0' } }
+                    }
+                }
+            });
+
+            // 5. TABELA: NADCHODZĄCE ZADANIA
+            const tbody = document.getElementById('dashboard-tasks-table');
+            tbody.innerHTML = '';
+
+            // Wybieramy tylko zadania, które nie są Done i mają deadline, sortujemy od najbliższego
+            const upcomingTasks = tasks
+                .filter(t => t.status !== 'Done' && t.deadline)
+                .sort((a, b) => new Date(a.deadline) - new Date(b.deadline))
+                .slice(0, 5); // Pobieramy maksymalnie 5 pierwszych
+
+            if (upcomingTasks.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-muted">Brak nadchodzących zadań</td></tr>';
+            } else {
+                upcomingTasks.forEach(task => {
+                    // Obliczanie kolorów terminów
+                    let daysLeft = 999;
+                    if(task.deadline) {
+                        const dDate = new Date(task.deadline);
+                        daysLeft = Math.ceil((dDate - new Date()) / (1000 * 60 * 60 * 24));
+                    }
+
+                    let deadlineClass = "deadline-safe";
+                    if (daysLeft < 0) deadlineClass = "deadline-danger";
+                    else if (daysLeft <= 3) deadlineClass = "deadline-warn";
+
+                    // Obliczanie kolorów statusów
+                    let statusClass = "status-todo";
+                    if (task.status === "In Progress") statusClass = "status-progress";
+                    if (task.status === "In Review") statusClass = "status-review";
+
+                    const gameName = task.game ? task.game.name : 'Usunięta gra';
+                    const gameId = task.game ? task.game.id : 1;
+
+                    tbody.innerHTML += `
+                    <tr style="cursor: pointer;" onclick="navigateTo('details', {id: ${gameId}})">
+                        <td class="fw-bold text-light">${task.title}</td>
+                        <td class="text-muted">${gameName}</td>
+                        <td>${task.priority}</td>
+                        <td class="${deadlineClass}">${task.deadline}</td>
+                        <td><span class="status-badge ${statusClass}">${task.status}</span></td>
+                    </tr>
+                `;
+                });
+            }
+        })
+        .catch(error => {
+            console.error("Dashboard data load error:", error);
+            document.getElementById('dashboard-tasks-table').innerHTML =
+                `<tr><td colspan="5" class="text-center text-danger py-4">Błąd połączenia z serwerem bazy danych.</td></tr>`;
+        });
 }
