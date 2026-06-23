@@ -1,0 +1,73 @@
+/* Main stylesheet for the Web Application Starter */
+
+/* Custom styles beyond Bootstrap defaults */
+
+/* Global spacing and utilities */
+.page-container {
+    min-height: 70vh;
+}
+
+/* Form adjustments */
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.required-field::after {
+    content: " *";
+    color: red;
+}
+
+/* Card hover effects */
+.card-hover:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+    transition: all 0.3s ease;
+}
+
+/* Custom table styles */
+.table-actions {
+    width: 150px;
+}
+
+/* Detail view styles */
+.detail-label {
+    font-weight: bold;
+}
+
+/* Loading indicator */
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* Status indicators */
+.status-badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    border-radius: 0.25rem;
+}
+
+.status-active {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+/* Error message styling */
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+}
