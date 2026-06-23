@@ -1,175 +1,126 @@
 /**
- * List Page Controller
- * Displays a list of items from the API
+ * LIndieForge - Games List Controller
+ * Wyświetla listę gier w formie kafelków (kart) z paskami postępu
  */
 
-/**
- * Render the list page
- */
 function renderListPage() {
     const appContainer = document.getElementById('app-container');
 
-    // Set initial loading state
+    // Struktura strony: Nagłówek z przyciskiem, filtry i kontener na karty gier
     appContainer.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Items</h2>
-            <button class="btn btn-success" id="create-new-btn">
-                <i class="bi bi-plus-circle"></i> Create New
+            <h2 class="text-light"><i class="bi bi-controller"></i> Games</h2>
+            <button class="btn btn-primary" id="btn-new-game">
+                <i class="bi bi-plus-lg"></i> New Game
             </button>
         </div>
-        
-        <div id="items-table-container">
-            <div class="text-center my-5">
-                <div class="spinner-border" role="status">
+
+        <div class="card bg-dark border-secondary mb-4">
+            <div class="card-body p-3 d-flex flex-wrap gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="filter-phase" class="text-muted text-nowrap mb-0">Phase:</label>
+                    <select class="form-select form-select-sm bg-dark text-light border-secondary" id="filter-phase" style="width: 150px;">
+                        <option value="All">All Phases</option>
+                        <option value="Concept">Concept</option>
+                        <option value="Production">Production</option>
+                        <option value="Alpha">Alpha</option>
+                        <option value="Beta">Beta</option>
+                        <option value="Released">Released</option>
+                    </select>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-grow-1">
+                    <label for="search-game" class="text-muted text-nowrap mb-0">Search:</label>
+                    <input type="text" class="form-control form-control-sm bg-dark text-light border-secondary" id="search-game" placeholder="Search by game name...">
+                </div>
+            </div>
+        </div>
+
+        <div class="row" id="games-container">
+            <div class="col-12 text-center py-5">
+                <div class="spinner-border text-primary" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
-                <p>Loading items...</p>
             </div>
         </div>
     `;
 
-    // Add event listener to create button
-    document.getElementById('create-new-btn').addEventListener('click', () => {
-        navigateTo('create');
+    // Podpięcie eventów
+    document.getElementById('btn-new-game').addEventListener('click', () => {
+        showSuccess("Tu otworzymy formularz tworzenia nowej gry!");
+        // W przyszłości: navigateTo('create');
     });
 
-    // Fetch items from API
-    loadItems();
+    document.getElementById('filter-phase').addEventListener('change', (e) => {
+        showSuccess("Filtrowanie gier po fazie: " + e.target.value);
+    });
+
+    document.getElementById('search-game').addEventListener('input', (e) => {
+        // Wyszukiwanie "na żywo" bez przeładowania (Live Search)
+    });
+
+    // Rozpoczęcie ładowania danych
+    loadGamesData();
 }
 
 /**
- * Load items from the API
+ * Pobiera dane gier i renderuje je jako Karty
  */
-function loadItems() {
-    const tableContainer = document.getElementById('items-table-container');
+function loadGamesData() {
+    // Tymczasowe Mocki (symulacja danych z bazy)
+    setTimeout(() => {
+        const mockGames = [
+            { id: 1, name: "Dungeon Quest", genre: "RPG", platform: "PC, Console", phase: "Alpha", progress: 65, engine: "Unity" },
+            { id: 2, name: "Space Miner", genre: "Puzzle", platform: "Mobile", phase: "Production", progress: 30, engine: "Godot" },
+            { id: 3, name: "Neon Nights", genre: "Platformer", platform: "PC", phase: "Concept", progress: 5, engine: "Unreal" },
+            { id: 4, name: "Horror House", genre: "Horror", platform: "PC, VR", phase: "Beta", progress: 90, engine: "Unity" }
+        ];
 
-    ApiService.getAllItems()
-        .then(items => {
-            renderItemsTable(items);
-        })
-        .catch(error => {
-            tableContainer.innerHTML = `
-                <div class="alert alert-danger" role="alert">
-                    <h4 class="alert-heading">Error Loading Items</h4>
-                    <p>${error.message}</p>
-                    <hr>
-                    <p class="mb-0">Please check your API configuration and try again.</p>
-                    <button class="btn btn-primary mt-3" id="retry-load-btn">
-                        Retry
-                    </button>
+        const container = document.getElementById('games-container');
+        container.innerHTML = ''; // Usuwamy spinner ładowania
+
+        mockGames.forEach(game => {
+            // Kolor paska postępu zależny od procentu ukończenia
+            let progressColor = "bg-primary";
+            if(game.progress >= 90) progressColor = "bg-success";
+            else if(game.progress < 20) progressColor = "bg-secondary";
+
+            // Renderowanie karty
+            container.innerHTML += `
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card card-hover h-100 bg-dark border-secondary" style="cursor: pointer;" onclick="goToGameDetails(${game.id}, '${game.name}')">
+                        <div class="card-header border-secondary d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0 text-light text-truncate" title="${game.name}">${game.name}</h5>
+                            <span class="badge bg-dark border border-secondary text-muted">${game.engine}</span>
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <div class="mb-3">
+                                <span class="badge bg-secondary">${game.genre}</span>
+                                <span class="badge bg-info text-dark">${game.phase}</span>
+                            </div>
+                            <p class="text-muted small mb-4"><i class="bi bi-display"></i> Platforms: ${game.platform}</p>
+                            
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between small mb-1">
+                                    <span class="text-muted">Completion</span>
+                                    <span class="text-light fw-bold">${game.progress}%</span>
+                                </div>
+                                <div class="progress bg-dark border border-secondary" style="height: 10px;">
+                                    <div class="progress-bar ${progressColor}" role="progressbar" style="width: ${game.progress}%;" aria-valuenow="${game.progress}" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
-
-            // Add retry button event listener
-            document.getElementById('retry-load-btn').addEventListener('click', () => {
-                loadItems();
-            });
         });
+    }, 400); // 0.4s opóźnienia
 }
 
 /**
- * Render the items table
- * @param {Object[]} items - Array of item objects
+ * Funkcja nawigująca do szczegółów konkretnej gry
  */
-function renderItemsTable(items) {
-    const tableContainer = document.getElementById('items-table-container');
-
-    // Define table columns
-    const columns = [
-        {
-            field: 'id',
-            title: 'ID',
-            width: '10%'
-        },
-        {
-            field: 'name',
-            title: 'Name',
-            render: (value, item) => {
-                return `<strong>${value}</strong>`;
-            }
-        },
-        {
-            field: 'description',
-            title: 'Description',
-            render: (value) => {
-                // Truncate long descriptions
-                if (value && value.length > 100) {
-                    return value.substring(0, 100) + '...';
-                }
-                return value || '';
-            }
-        },
-        {
-            field: 'active',
-            title: 'Status',
-            width: '15%',
-            render: (value) => {
-                return value ?
-                    '<span class="status-badge status-active">Active</span>' :
-                    '<span class="status-badge status-inactive">Inactive</span>';
-            }
-        }
-    ];
-
-    // Create table with items
-    const table = createTable(items, {
-        columns: columns,
-        onView: (id) => {
-            navigateTo('details', { id });
-        },
-        onEdit: (id) => {
-            navigateTo('edit', { id });
-        },
-        onDelete: (id, item) => {
-            confirmDeleteItem(id, item.name);
-        }
-    });
-
-    // Clear loading indicator and show table
-    tableContainer.innerHTML = '';
-    tableContainer.appendChild(table);
-
-    // Add empty state if no items
-    if (items.length === 0) {
-        const emptyState = document.createElement('div');
-        emptyState.className = 'text-center my-5';
-        emptyState.innerHTML = `
-            <div class="mb-4">
-                <i class="bi bi-inbox" style="font-size: 3rem;"></i>
-            </div>
-            <h4>No Items Found</h4>
-            <p>There are no items to display. Get started by creating a new item.</p>
-            <button class="btn btn-primary" id="create-empty-btn">
-                Create First Item
-            </button>
-        `;
-
-        tableContainer.appendChild(emptyState);
-
-        // Add event listener to create button
-        document.getElementById('create-empty-btn').addEventListener('click', () => {
-            navigateTo('create');
-        });
-    }
-}
-
-/**
- * Confirm and handle item deletion
- * @param {number} id - Item ID
- * @param {string} itemName - Item name for confirmation
- */
-function confirmDeleteItem(id, itemName) {
-    confirmAction(`Are you sure you want to delete "${itemName}"?`)
-        .then(confirmed => {
-            if (confirmed) {
-                ApiService.deleteItem(id)
-                    .then(() => {
-                        showSuccess('Item deleted successfully');
-                        loadItems(); // Refresh the list
-                    })
-                    .catch(error => {
-                        showError(`Failed to delete item: ${error.message}`);
-                    });
-            }
-        });
+function goToGameDetails(id, name) {
+    showSuccess(`Ładowanie szczegółów gry: ${name} (ID: ${id})`);
+    // Gdy zrobimy details.js odkomentujemy to:
+    // navigateTo('details', { id: id, name: name });
 }
