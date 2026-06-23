@@ -121,6 +121,6 @@ function loadGamesData() {
  */
 function goToGameDetails(id, name) {
     showSuccess(`Ładowanie szczegółów gry: ${name} (ID: ${id})`);
-    // Gdy zrobimy details.js odkomentujemy to:
-    // navigateTo('details', { id: id, name: name });
+
+    navigateTo('details', { id: id, name: name });
 }
