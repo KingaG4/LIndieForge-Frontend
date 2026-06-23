@@ -1,183 +1,156 @@
 /**
- * Edit Page Controller
- * Handles creating a new item or editing an existing one
+ * LIndieForge - Edit/Create Page Controller
+ * Obsługuje formularze dla Gier (Games) i Zadań (Tasks)
  */
 
-/**
- * Render the edit page
- * @param {number} id - Item ID to edit (null for create mode)
- */
 function renderEditPage(id) {
     const appContainer = document.getElementById('app-container');
     const isCreateMode = !id;
 
-    // Set initial page structure
+    // Odczytujemy typ encji przekazany z routera (game lub task)
+    const entityType = appState.params.entity || 'game';
+    const entityName = entityType === 'game' ? 'Game' : 'Task';
+
+    // Aktualizacja okruszków (Breadcrumbs)
+    const breadcrumb = document.getElementById('breadcrumb-container');
+    if(breadcrumb) {
+        breadcrumb.innerHTML = `
+            <li class="breadcrumb-item"><a href="#" data-route="dashboard" class="text-decoration-none">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="#" data-route="games" class="text-decoration-none">Games</a></li>
+            <li class="breadcrumb-item active text-primary">${isCreateMode ? 'New' : 'Edit'} ${entityName}</li>
+        `;
+    }
+
     appContainer.innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>${isCreateMode ? 'Create New Item' : 'Edit Item'}</h2>
-            <button class="btn btn-secondary" id="back-btn">
-                <i class="bi bi-arrow-left"></i> Back
-            </button>
+            <h2 class="text-light"><i class="bi bi-pencil-square"></i> ${isCreateMode ? 'Create New' : 'Edit'} ${entityName}</h2>
+            <button class="btn btn-outline-secondary" id="back-btn"><i class="bi bi-arrow-left"></i> Back</button>
         </div>
         
-        <div id="edit-form-container">
-            ${isCreateMode ? '' : `
-                <div class="text-center my-5">
-                    <div class="spinner-border" role="status">
-                        <span class="visually-hidden">Loading...</span>
-                    </div>
-                    <p>Loading item data...</p>
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card bg-dark border-secondary shadow">
+                    <div class="card-body" id="edit-form-container">
+                        </div>
                 </div>
-            `}
+            </div>
         </div>
     `;
 
-    // Add event listener to back button
     document.getElementById('back-btn').addEventListener('click', () => {
-        navigateTo(isCreateMode ? 'list' : 'details', isCreateMode ? {} : { id });
+        if(entityType === 'task' && appState.params.gameId) {
+            navigateTo('details', { id: appState.params.gameId });
+        } else {
+            navigateTo('games');
+        }
     });
 
-    if (isCreateMode) {
-        // Create mode - render empty form
-        renderItemForm();
+    if (entityType === 'game') {
+        renderGameForm(isCreateMode);
     } else {
-        // Edit mode - load existing item first
-        loadItemForEdit(id);
+        renderTaskForm(isCreateMode);
     }
 }
 
 /**
- * Load item data for editing
- * @param {number} id - Item ID to load
+ * Renderuje formularz dla Gry wg Specyfikacji
  */
-function loadItemForEdit(id) {
+function renderGameForm(isCreateMode) {
     const formContainer = document.getElementById('edit-form-container');
 
-    ApiService.getItemById(id)
-        .then(item => {
-            renderItemForm(item);
-        })
-        .catch(error => {
-            formContainer.innerHTML = `
-                <div class="alert alert-danger" role="alert">
-                    <h4 class="alert-heading">Error Loading Item</h4>
-                    <p>${error.message}</p>
-                    <hr>
-                    <p class="mb-0">The item may not exist or there could be a connection issue.</p>
-                    <button class="btn btn-primary mt-3" id="retry-load-btn">
-                        Retry
-                    </button>
-                </div>
-            `;
-
-            // Add retry button event listener
-            document.getElementById('retry-load-btn').addEventListener('click', () => {
-                loadItemForEdit(id);
-            });
-        });
-}
-
-/**
- * Render the item form
- * @param {Object} item - Item data for edit mode (null for create mode)
- */
-function renderItemForm(item = null) {
-    const formContainer = document.getElementById('edit-form-container');
-    const isCreateMode = !item;
-
-    // Define form fields
     const fields = [
+        { id: 'name', name: 'name', label: 'Game Name', type: 'text', placeholder: 'e.g. Dungeon Quest', required: true },
+        { id: 'description', name: 'description', label: 'Description', type: 'textarea', placeholder: 'Short description of the project...', rows: 3 },
         {
-            id: 'name',
-            name: 'name',
-            label: 'Name',
-            type: 'text',
-            placeholder: 'Enter item name',
-            required: true,
-            invalidFeedback: 'Name is required'
+            id: 'genre', name: 'genre', label: 'Genre', type: 'select', required: true,
+            options: [
+                { value: 'RPG', label: 'RPG' }, { value: 'Platformer', label: 'Platformer' },
+                { value: 'Puzzle', label: 'Puzzle' }, { value: 'Horror', label: 'Horror' },
+                { value: 'Other', label: 'Other' }
+            ]
         },
         {
-            id: 'description',
-            name: 'description',
-            label: 'Description',
-            type: 'textarea',
-            placeholder: 'Enter item description',
-            rows: 4
+            id: 'engine', name: 'engine', label: 'Engine', type: 'select', required: true,
+            options: [
+                { value: 'Unity', label: 'Unity' }, { value: 'Godot', label: 'Godot' },
+                { value: 'Unreal', label: 'Unreal' }, { value: 'Custom', label: 'Custom' }
+            ]
         },
         {
-            id: 'active',
-            name: 'active',
-            label: 'Status',
-            type: 'checkbox',
-            checkboxLabel: 'Active'
-        }
-        // Add more fields specific to your entity
+            id: 'phase', name: 'phase', label: 'Production Phase', type: 'select', required: true,
+            options: [
+                { value: 'Concept', label: 'Concept' }, { value: 'Production', label: 'Production' },
+                { value: 'Alpha', label: 'Alpha' }, { value: 'Beta', label: 'Beta' },
+                { value: 'Released', label: 'Released' }
+            ]
+        },
+        { id: 'releaseDate', name: 'releaseDate', label: 'Planned Release Date', type: 'date', required: true }
     ];
 
-    // Create the form with initial values
     const form = createForm(fields, {
-        id: 'item-form',
-        submitLabel: isCreateMode ? 'Create' : 'Save Changes',
-        initialValues: item || { active: true },
-        onSubmit: (formData) => handleFormSubmit(formData, isCreateMode ? null : item.id),
-        onCancel: () => {
-            navigateTo(isCreateMode ? 'list' : 'details', isCreateMode ? {} : { id: item.id });
+        id: 'game-form',
+        submitLabel: isCreateMode ? 'Create Game' : 'Save Changes',
+        showCancel: false,
+        onSubmit: (formData) => {
+            // W przyszłości: ApiService.post('/games', formData)
+            showSuccess("Game saved successfully! (Simulation)");
+            setTimeout(() => navigateTo('games'), 1000);
         }
     });
 
-    // Clear loading indicator and show form
-    formContainer.innerHTML = '';
-
-    // Create a card to contain the form
-    const formCard = document.createElement('div');
-    formCard.className = 'card';
-
-    const cardBody = document.createElement('div');
-    cardBody.className = 'card-body';
-    cardBody.appendChild(form);
-
-    formCard.appendChild(cardBody);
-    formContainer.appendChild(formCard);
+    formContainer.appendChild(form);
 }
 
 /**
- * Handle form submission
- * @param {Object} formData - Form data
- * @param {number} id - Item ID for edit mode (null for create mode)
+ * Renderuje formularz dla Zadania wg Specyfikacji
  */
-function handleFormSubmit(formData, id) {
-    const isCreateMode = !id;
+function renderTaskForm(isCreateMode) {
+    const formContainer = document.getElementById('edit-form-container');
 
-    // Process form data if needed
-    // For example, convert string values to appropriate types
-    if (formData.active === 'on') {
-        formData.active = true;
-    }
+    const fields = [
+        { id: 'title', name: 'title', label: 'Task Title', type: 'text', placeholder: 'e.g. Fix audio bug', required: true },
+        { id: 'description', name: 'description', label: 'Description', type: 'textarea', rows: 3 },
+        {
+            id: 'type', name: 'type', label: 'Task Type', type: 'select', required: true,
+            options: [
+                { value: 'Programming', label: 'Programming' }, { value: 'Art', label: 'Art' },
+                { value: 'Audio', label: 'Audio' }, { value: 'Testing', label: 'Testing' },
+                { value: 'Other', label: 'Other' }
+            ]
+        },
+        {
+            id: 'priority', name: 'priority', label: 'Priority', type: 'select', required: true,
+            options: [
+                { value: 'High', label: 'High' }, { value: 'Medium', label: 'Medium' }, { value: 'Low', label: 'Low' }
+            ]
+        },
+        {
+            id: 'status', name: 'status', label: 'Status', type: 'select', required: true,
+            options: [
+                { value: 'To Do', label: 'To Do' }, { value: 'In Progress', label: 'In Progress' },
+                { value: 'In Review', label: 'In Review' }, { value: 'Done', label: 'Done' }
+            ]
+        },
+        { id: 'deadline', name: 'deadline', label: 'Deadline', type: 'date', required: true },
+        {
+            id: 'assignee', name: 'assignee', label: 'Assignee', type: 'select', required: true,
+            options: [
+                { value: 'Kinga Głowacka', label: 'Kinga Głowacka' }, { value: 'Natalia Michalak', label: 'Natalia Michalak' },
+                { value: 'Jan Kowalski', label: 'Jan Kowalski' }
+            ]
+        }
+    ];
 
-    // Show loading state
-    const submitButton = document.querySelector('#item-form button[type="submit"]');
-    const originalButtonText = submitButton.textContent;
-    submitButton.disabled = true;
-    submitButton.innerHTML = `
-        <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-        ${isCreateMode ? 'Creating...' : 'Saving...'}
-    `;
+    const form = createForm(fields, {
+        id: 'task-form',
+        submitLabel: isCreateMode ? 'Create Task' : 'Save Changes',
+        showCancel: false,
+        onSubmit: (formData) => {
+            showSuccess("Task saved successfully! (Simulation)");
+            const gameId = appState.params.gameId || 1;
+            setTimeout(() => navigateTo('details', { id: gameId }), 1000);
+        }
+    });
 
-    // API call based on mode
-    const apiPromise = isCreateMode
-        ? ApiService.createItem(formData)
-        : ApiService.updateItem(id, formData);
-
-    apiPromise
-        .then(savedItem => {
-            showSuccess(`Item ${isCreateMode ? 'created' : 'updated'} successfully`);
-            navigateTo('details', { id: savedItem.id });
-        })
-        .catch(error => {
-            showError(`Failed to ${isCreateMode ? 'create' : 'update'} item: ${error.message}`);
-
-            // Reset button state
-            submitButton.disabled = false;
-            submitButton.textContent = originalButtonText;
-        });
+    formContainer.appendChild(form);
 }

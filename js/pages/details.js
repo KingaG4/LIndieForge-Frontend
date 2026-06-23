@@ -124,7 +124,9 @@ function renderDetailsPage(id, name = "Game Details") {
 
     // Eventy dla przycisków
     document.getElementById('btn-edit-game').addEventListener('click', () => showSuccess("Otwarcie formularza edycji gry."));
-    document.getElementById('btn-add-task').addEventListener('click', () => showSuccess("Otwarcie formularza dodawania zadania."));
+    document.getElementById('btn-add-task').addEventListener('click', () => {
+        navigateTo('create', { entity: 'task', gameId: id });
+    });
 
     loadGameDetailsData(id);
 }

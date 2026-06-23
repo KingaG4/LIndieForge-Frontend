@@ -46,8 +46,7 @@ function renderListPage() {
 
     // Podpięcie eventów
     document.getElementById('btn-new-game').addEventListener('click', () => {
-        showSuccess("Tu otworzymy formularz tworzenia nowej gry!");
-        // W przyszłości: navigateTo('create');
+        navigateTo('create', { entity: 'game' });
     });
 
     document.getElementById('filter-phase').addEventListener('change', (e) => {
