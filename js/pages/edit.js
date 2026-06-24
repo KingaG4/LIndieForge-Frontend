@@ -1,17 +1,14 @@
 /**
  * LIndieForge - Edit/Create Page Controller
- * Obsługuje formularze dla Gier (Games) i Zadań (Tasks)
+ * Obsługuje formularze dla Gier (Create & Update) oraz Zadań (Create)
  */
 
 function renderEditPage(id) {
     const appContainer = document.getElementById('app-container');
-    const isCreateMode = !id;
-
-    // Odczytujemy typ encji przekazany z routera (game lub task)
+    const isCreateMode = !id; // Jeśli nie ma przekazanego ID, to znaczy, że tworzymy nowe
     const entityType = appState.params.entity || 'game';
     const entityName = entityType === 'game' ? 'Game' : 'Task';
 
-    // Aktualizacja okruszków (Breadcrumbs)
     const breadcrumb = document.getElementById('breadcrumb-container');
     if(breadcrumb) {
         breadcrumb.innerHTML = `
@@ -31,7 +28,8 @@ function renderEditPage(id) {
             <div class="col-md-8">
                 <div class="card bg-dark border-secondary shadow">
                     <div class="card-body" id="edit-form-container">
-                        </div>
+                        <div class="text-center py-5"><div class="spinner-border text-primary" role="status"></div></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -40,23 +38,31 @@ function renderEditPage(id) {
     document.getElementById('back-btn').addEventListener('click', () => {
         if(entityType === 'task' && appState.params.gameId) {
             navigateTo('details', { id: appState.params.gameId });
+        } else if (!isCreateMode && entityType === 'game') {
+            navigateTo('details', { id: id }); // Wraca do edytowanej gry
         } else {
             navigateTo('games');
         }
     });
 
     if (entityType === 'game') {
-        renderGameForm(isCreateMode);
+        if (isCreateMode) {
+            renderGameForm(true, null);
+        } else {
+            // TRYB EDYCJI: Pobieramy starą grę z bazy!
+            ApiService.getAllGames().then(games => {
+                const gameToEdit = games.find(g => g.id == id);
+                renderGameForm(false, gameToEdit);
+            }).catch(err => showError("Błąd pobierania danych gry"));
+        }
     } else {
         renderTaskForm(isCreateMode);
     }
 }
 
-/**
- * Renderuje formularz dla Gry wg Specyfikacji
- */
-function renderGameForm(isCreateMode) {
+function renderGameForm(isCreateMode, gameData) {
     const formContainer = document.getElementById('edit-form-container');
+    formContainer.innerHTML = ''; // Usuwamy kółko ładowania
 
     const fields = [
         { id: 'name', name: 'name', label: 'Game Name', type: 'text', placeholder: 'e.g. Dungeon Quest', required: true },
@@ -92,26 +98,42 @@ function renderGameForm(isCreateMode) {
         submitLabel: isCreateMode ? 'Create Game' : 'Save Changes',
         showCancel: false,
         onSubmit: (formData) => {
-            // WYSYŁAMY PRAWDZIWE DANE DO SPRINGA!
-            ApiService.createGame(formData)
-                .then(response => {
-                    showSuccess("SUKCES! Gra została zapisana w bazie MySQL!");
-                    setTimeout(() => navigateTo('games'), 1500);
-                })
-                .catch(error => {
-                    showError("Błąd zapisu do bazy: " + error.message);
-                });
+            if (isCreateMode) {
+                // TWORZENIE NOWEJ GRY (POST)
+                ApiService.createGame(formData)
+                    .then(() => {
+                        showSuccess("SUKCES! Gra została utworzona!");
+                        setTimeout(() => navigateTo('games'), 1500);
+                    })
+                    .catch(error => showError("Błąd zapisu gry: " + error.message));
+            } else {
+                // EDYCJA ISTNIEJĄCEJ GRY (PUT)
+                ApiService.updateGame(gameData.id, formData)
+                    .then(() => {
+                        showSuccess("SUKCES! Zmiany zostały nadpisane!");
+                        setTimeout(() => navigateTo('details', { id: gameData.id }), 1500);
+                    })
+                    .catch(error => showError("Błąd aktualizacji gry: " + error.message));
+            }
         }
     });
 
     formContainer.appendChild(form);
+
+    // BARDZO WAŻNE: Wypełniamy okienka formularza starymi danymi!
+    if (!isCreateMode && gameData) {
+        document.getElementById('name').value = gameData.name || '';
+        document.getElementById('description').value = gameData.description || '';
+        document.getElementById('genre').value = gameData.genre || 'RPG';
+        document.getElementById('engine').value = gameData.engine || 'Unity';
+        document.getElementById('phase').value = gameData.phase || 'Concept';
+        document.getElementById('releaseDate').value = gameData.releaseDate || '';
+    }
 }
 
-/**
- * Renderuje formularz dla Zadania wg Specyfikacji
- */
 function renderTaskForm(isCreateMode) {
     const formContainer = document.getElementById('edit-form-container');
+    formContainer.innerHTML = '';
 
     const fields = [
         { id: 'title', name: 'title', label: 'Task Title', type: 'text', placeholder: 'e.g. Fix audio bug', required: true },
@@ -153,18 +175,14 @@ function renderTaskForm(isCreateMode) {
         submitLabel: isCreateMode ? 'Create Task' : 'Save Changes',
         showCancel: false,
         onSubmit: (formData) => {
-            // Dodajemy gameId, bo backend z Waszego DTO tego oczekuje
             formData.gameId = appState.params.gameId || 1;
 
-            // WYSYŁAMY PRAWDZIWE DANE DO SPRINGA!
             ApiService.createTask(formData)
-                .then(response => {
-                    showSuccess("SUKCES! Zadanie pomyślnie dodane do bazy!");
+                .then(() => {
+                    showSuccess("SUKCES! Zadanie pomyślnie dodane!");
                     setTimeout(() => navigateTo('details', { id: formData.gameId }), 1500);
                 })
-                .catch(error => {
-                    showError("Błąd zapisu zadania do bazy: " + error.message);
-                });
+                .catch(error => showError("Błąd zapisu zadania: " + error.message));
         }
     });
 

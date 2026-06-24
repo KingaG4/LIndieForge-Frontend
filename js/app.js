@@ -165,3 +165,68 @@ function initApp() {
 
 // Initialize the app when the DOM is fully loaded
 document.addEventListener('DOMContentLoaded', initApp);
+
+// ==========================================
+// SYSTEM PRZEŁĄCZANIA UŻYTKOWNIKÓW I WYLOGOWANIA
+// ==========================================
+
+window.currentUser = JSON.parse(localStorage.getItem('currentUser'));
+
+document.addEventListener('DOMContentLoaded', () => {
+    ApiService.getAllUsers().then(users => {
+        // Ustawiamy napis w prawym górnym rogu
+        const userNameSpan = document.getElementById('current-user-name');
+        if (userNameSpan) {
+            userNameSpan.innerText = window.currentUser ? window.currentUser.name : 'Zaloguj się (Wybierz profil)';
+        }
+
+        // Budujemy rozwijaną listę
+        const dropdownList = document.getElementById('user-switcher-list');
+        if (dropdownList) {
+            dropdownList.innerHTML = '';
+            users.forEach(user => {
+                const isActive = (window.currentUser && window.currentUser.id === user.id) ? 'active bg-primary' : '';
+                dropdownList.innerHTML += `
+                    <li>
+                        <a class="dropdown-item ${isActive}" href="#" onclick="switchUser(${user.id}, '${user.name}')">
+                            <i class="bi bi-person"></i> ${user.name}
+                        </a>
+                    </li>
+                `;
+            });
+        }
+    }).catch(err => console.error("Nie udało się pobrać użytkowników", err));
+});
+
+window.switchUser = function(id, name) {
+    const user = { id: id, name: name };
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    window.currentUser = user;
+    window.location.reload();
+};
+
+// NOWA FUNKCJA: WYLOGOWANIE
+window.logout = function() {
+    if(!window.currentUser) {
+        showError("Już jesteś wylogowana!");
+        return;
+    }
+
+    // 1. Czyścimy pamięć (sesję)
+    localStorage.removeItem('currentUser');
+    window.currentUser = null;
+
+    // 2. Wyświetlamy piękny komunikat na środku ekranu
+    Swal.fire({
+        title: 'Wylogowano się!',
+        text: 'Wybierz profil z menu na górze, aby zalogować się ponownie i kontynuować pracę.',
+        icon: 'info',
+        background: '#212529',
+        color: '#fff',
+        confirmButtonText: 'Rozumiem',
+        confirmButtonColor: '#0d6efd'
+    }).then(() => {
+        // 3. Po kliknięciu "Rozumiem", odświeżamy stronę
+        window.location.reload();
+    });
+};

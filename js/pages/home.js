@@ -132,7 +132,7 @@ function loadDashboardData() {
                 if (task.status === "Done") chartDone++;
 
                 // Zliczanie "My Tasks" - zakładamy, że zalogowana jest Kinga (ID = 1)
-                if (task.assignedUser && task.assignedUser.id === 1 && task.status !== "Done") {
+                if (task.assignedUser && window.currentUser && task.assignedUser.id === window.currentUser.id && task.status !== "Done") {
                     myTasksCount++;
                 }
 

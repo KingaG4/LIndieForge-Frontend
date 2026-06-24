@@ -60,5 +60,44 @@ const ApiService = {
 
     createTask: function(taskDto) {
         return this.post(API_CONFIG.endpoints.tasks, taskDto);
+    },
+
+    updateTaskStatus: function(taskId, newStatus) {
+        return fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.tasks}/${taskId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: newStatus })
+        });
+    },
+
+    // Pobiera wszystkie komentarze z bazy
+    getAllComments: function() {
+        return this.get(API_CONFIG.endpoints.comments);
+    },
+
+    // Wysyła nowy komentarz do bazy
+    createComment: function(commentDto) {
+        return this.post(API_CONFIG.endpoints.comments, commentDto);
+    },
+    createComment: function(commentDto) {
+        return this.post(API_CONFIG.endpoints.comments, commentDto);
+    }, // Pamiętaj o przecinku tutaj!
+
+    // NOWE: Pobiera wszystkich użytkowników (członków zespołu)
+    getAllUsers: function() {
+        return this.get(API_CONFIG.endpoints.users);
+    },
+    // Pobiera wszystkich użytkowników (członków zespołu)
+    getAllUsers: function() {
+        return this.get(API_CONFIG.endpoints.users);
+    }, // Pamiętaj o dodaniu przecinka!
+
+    // NOWE: Aktualizuje (nadpisuje) istniejącą grę w bazie MySQL
+    updateGame: function(gameId, gameDto) {
+        return fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.games}/${gameId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(gameDto)
+        });
     }
 };

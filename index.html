@@ -28,17 +28,17 @@
                 </li>
             </ul>
             <ul class="navbar-nav">
-                <li class="nav-item me-3 d-flex align-items-center">
-                    <div class="input-group input-group-sm">
-                        <span class="input-group-text bg-dark text-light border-secondary"><i class="bi bi-search"></i></span>
-                        <input type="text" class="form-control bg-dark text-light border-secondary" id="global-search" placeholder="Search...">
-                    </div>
+
+                <li class="nav-item dropdown list-unstyled">
+                    <a class="nav-link dropdown-toggle text-light" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-person-circle text-primary"></i> <span id="current-user-name">Loading...</span>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow border-secondary" id="user-switcher-list">
+                    </ul>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="#" data-route="profile"><i class="bi bi-person-circle"></i> Profile</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link text-danger" href="#" data-route="login"><i class="bi bi-box-arrow-right"></i> Logout</a>
+
+                <li class="nav-item ms-2">
+                    <a class="nav-link text-danger" href="#" onclick="logout()"><i class="bi bi-box-arrow-right"></i> Wyloguj</a>
                 </li>
             </ul>
         </div>
