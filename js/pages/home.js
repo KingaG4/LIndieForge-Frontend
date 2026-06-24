@@ -157,7 +157,7 @@ function loadDashboardData() {
                     labels: ['To Do', 'In Progress', 'Done'],
                     datasets: [{
                         data: [chartTodo, chartProgress, chartDone],
-                        backgroundColor: ['#6c757d', '#0d6efd', '#198754'],
+                        backgroundColor: ['#6a0695', '#0d6efd', '#198754'],
                         borderWidth: 0
                     }]
                 },

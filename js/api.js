@@ -3,7 +3,7 @@
  * Obsługuje komunikację z Waszym backendem Spring Boot
  */
 
-// Konfiguracja zgodna z Waszym plikiem application.properties
+// Konfiguracja zgodna z plikiem application.properties
 const API_CONFIG = {
     baseUrl: 'http://localhost:8765/api', // Port 8765 z application.properties
     endpoints: {
@@ -35,7 +35,7 @@ const ApiService = {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             });
-            // Spring z Waszych kontrolerów zwraca zwykły tekst np. "Game added", więc używamy .text() zamiast .json()
+
             if (!response.ok) throw new Error(`Błąd API: ${response.status}`);
             return await response.text();
         } catch (error) {
@@ -81,18 +81,18 @@ const ApiService = {
     },
     createComment: function(commentDto) {
         return this.post(API_CONFIG.endpoints.comments, commentDto);
-    }, // Pamiętaj o przecinku tutaj!
+    },
 
-    // NOWE: Pobiera wszystkich użytkowników (członków zespołu)
+    // Pobiera wszystkich użytkowników (członków zespołu)
     getAllUsers: function() {
         return this.get(API_CONFIG.endpoints.users);
     },
     // Pobiera wszystkich użytkowników (członków zespołu)
     getAllUsers: function() {
         return this.get(API_CONFIG.endpoints.users);
-    }, // Pamiętaj o dodaniu przecinka!
+    },
 
-    // NOWE: Aktualizuje (nadpisuje) istniejącą grę w bazie MySQL
+    //Aktualizuje (nadpisuje) istniejącą grę w bazie MySQL
     updateGame: function(gameId, gameDto) {
         return fetch(`${API_CONFIG.baseUrl}${API_CONFIG.endpoints.games}/${gameId}`, {
             method: 'PUT',

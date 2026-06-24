@@ -73,7 +73,7 @@ body {
 }
 
 /* Kolory statusów dla Kanban / Zadań */
-.status-todo { background-color: #6c757d; color: white; }
+.status-todo { background-color: #6a0695; color: white; }
 .status-progress { background-color: #0d6efd; color: white; }
 .status-review { background-color: #fd7e14; color: white; }
 .status-done { background-color: #198754; color: white; }

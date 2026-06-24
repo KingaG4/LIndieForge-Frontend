@@ -39,7 +39,7 @@ function renderEditPage(id) {
         if(entityType === 'task' && appState.params.gameId) {
             navigateTo('details', { id: appState.params.gameId });
         } else if (!isCreateMode && entityType === 'game') {
-            navigateTo('details', { id: id }); // Wraca do edytowanej gry
+            navigateTo('details', { id: id });
         } else {
             navigateTo('games');
         }
@@ -120,7 +120,7 @@ function renderGameForm(isCreateMode, gameData) {
 
     formContainer.appendChild(form);
 
-    // BARDZO WAŻNE: Wypełniamy okienka formularza starymi danymi!
+    // Wypełniamy okienka formularza starymi danymi
     if (!isCreateMode && gameData) {
         document.getElementById('name').value = gameData.name || '';
         document.getElementById('description').value = gameData.description || '';

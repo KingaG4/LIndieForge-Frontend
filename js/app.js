@@ -72,15 +72,12 @@ function renderCurrentRoute() {
         </div>
     `;
 
-    // Tutaj na razie używamy starych funkcji (home, list) z kodu startowego.
-    // W kolejnym kroku podmienimy to np. na renderDashboardPage().
+
     switch (appState.currentRoute) {
         case 'dashboard':
-            // Na razie ładuje 'home', dopóki nie napiszemy pliku dashboard.js
             if(typeof renderHomePage === 'function') renderHomePage();
             break;
         case 'games':
-            // Na razie ładuje 'list', dopóki nie napiszemy games.js
             if(typeof renderListPage === 'function') renderListPage();
             break;
         case 'details':
@@ -98,7 +95,7 @@ function renderCurrentRoute() {
 }
 
 /**
- * Zmienione zgodnie ze specyfikacją: Pokazuje błąd w prawym rogu jako Toast
+ * Zgodnie ze specyfikacją: Pokazuje błąd w prawym rogu jako Toast
  */
 function showError(message) {
     Toastify({
@@ -114,7 +111,7 @@ function showError(message) {
 }
 
 /**
- * Zmienione zgodnie ze specyfikacją: Pokazuje sukces w prawym rogu jako Toast
+ * Zgodnie ze specyfikacją: Pokazuje sukces w prawym rogu jako Toast
  */
 function showSuccess(message) {
     Toastify({
@@ -129,9 +126,7 @@ function showSuccess(message) {
     }).showToast();
 }
 
-/**
- * Confirms an action (Zostaje SweetAlert2, bo do potwierdzeń usunięcia jest dużo lepszy)
- */
+
 function confirmAction(message) {
     return Swal.fire({
         title: 'Are you sure?',
@@ -205,7 +200,7 @@ window.switchUser = function(id, name) {
     window.location.reload();
 };
 
-// NOWA FUNKCJA: WYLOGOWANIE
+//FUNKCJA: WYLOGOWANIE
 window.logout = function() {
     if(!window.currentUser) {
         showError("Już jesteś wylogowana!");

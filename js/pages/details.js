@@ -95,7 +95,37 @@ function loadGameDetailsData(id) {
 
             const totalTasks = currentGameTasks.length;
             const doneTasks = currentGameTasks.filter(t => t.status === 'Done').length;
+
+            // Tylko jedna deklaracja postępu
             const progress = totalTasks === 0 ? 0 : Math.round((doneTasks / totalTasks) * 100);
+
+            // ==========================================
+            // DYNAMICZNA LISTA ZESPOŁU
+            // ==========================================
+            const uniqueTeamMembers = [];
+            const memberIds = new Set();
+
+            // Przeszukujemy zadania i wyciągamy unikalnych użytkowników
+            currentGameTasks.forEach(task => {
+                if (task.assignedUser && !memberIds.has(task.assignedUser.id)) {
+                    memberIds.add(task.assignedUser.id);
+                    uniqueTeamMembers.push(task.assignedUser);
+                }
+            });
+
+            // Generujemy kod HTML dla listy zespołu
+            let teamHTML = '';
+            if (uniqueTeamMembers.length === 0) {
+                teamHTML = '<li class="list-group-item bg-dark text-muted border-secondary small px-0"><i class="bi bi-info-circle me-2"></i>Brak członków zespołu. Dodaj pierwsze zadania!</li>';
+            } else {
+                uniqueTeamMembers.forEach(member => {
+                    teamHTML += `
+                        <li class="list-group-item bg-dark text-light border-secondary d-flex align-items-center px-0 py-2">
+                            <i class="bi bi-person-circle text-primary me-3 fs-4"></i> 
+                            <span class="fw-bold">${member.name}</span>
+                        </li>`;
+                });
+            }
 
             // 1. OVERVIEW
             document.getElementById('overview-container').innerHTML = `
@@ -120,7 +150,9 @@ function loadGameDetailsData(id) {
                 <div class="card bg-dark border-secondary h-100">
                     <div class="card-body">
                         <h5 class="card-title text-light mb-3"><i class="bi bi-people"></i> Team</h5>
-                        <ul class="list-group list-group-flush"><li class="list-group-item bg-dark text-muted border-secondary">Zespół ładuje się dynamicznie na podstawie zadań...</li></ul>
+                        <ul class="list-group list-group-flush">
+                            ${teamHTML}
+                        </ul>
                     </div>
                 </div>
             </div>
@@ -155,7 +187,7 @@ function loadGameDetailsData(id) {
 
                 const assigneeName = task.assignedUser ? task.assignedUser.name : "Unassigned";
 
-                // Tabela - DODANO ONCLICK OTWIERAJĄCY MODAL
+                // Tabela
                 tableBody.innerHTML += `
                 <tr style="cursor: pointer;" onclick="openTaskModal(${task.id})">
                     <td class="text-muted">#${task.id}</td>
@@ -167,7 +199,7 @@ function loadGameDetailsData(id) {
                 </tr>
             `;
 
-                // Kanban - DODANO ONCLICK OTWIERAJĄCY MODAL
+                // Kanban
                 const kanbanCardHTML = `
                 <div class="card bg-dark border-secondary mb-2 kanban-card p-2" id="task-${task.id}" draggable="true" ondragstart="drag(event)" onclick="openTaskModal(${task.id})">
                     <div class="d-flex justify-content-between mb-1">
@@ -261,11 +293,10 @@ window.openTaskModal = function(taskId) {
             </div>
         </div>`;
 
-        // Usuń stary modal z pamięci przeglądarki jeśli tam został
         const oldModal = document.getElementById('taskModal');
         if (oldModal) oldModal.remove();
 
-        // Doklej nowy modal na koniec kodu HTML strony
+
         document.body.insertAdjacentHTML('beforeend', modalHTML);
 
         // Uruchomienie okienka za pomocą biblioteki Bootstrap
@@ -277,7 +308,7 @@ window.openTaskModal = function(taskId) {
 }
 
 window.addCommentToTask = function(taskId) {
-    // NOWA BLOKADA: Sprawdza, czy ktoś jest zalogowany
+    //Sprawdzanie, czy ktoś jest zalogowany
     if (!window.currentUser) {
         showError("Musisz być zalogowana (wybierz profil w prawym górnym rogu), aby dodawać komentarze!");
         return;
